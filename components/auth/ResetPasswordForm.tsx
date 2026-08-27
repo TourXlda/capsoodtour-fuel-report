@@ -73,7 +73,7 @@ export function ResetPasswordForm() {
       if (cancelled || accessGranted) return;
 
       const email = getRecoveryEmail();
-      router.replace(email ? buildVerifyEmailPath(email) : "/forget-password");
+      router.replace(email ? buildVerifyEmailPath(email, "recovery") : "/forget-password");
     };
 
     const {

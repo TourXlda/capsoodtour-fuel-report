@@ -59,17 +59,27 @@ export function ForgetPasswordForm() {
 
       const { error } = await requestPasswordRecovery(email);
 
+      // Always continue to verify screen to avoid email enumeration.
+      // Only surface hard SMTP/config failures to the user.
       if (error) {
-        clearRecoveryState();
-        setAuthError(
-          error.message ||
-            "Could not send reset link. Check SMTP settings in Supabase.",
-        );
-        return;
+        const message = error.message.toLowerCase();
+        const isConfigError =
+          message.includes("smtp") ||
+          message.includes("error sending") ||
+          message.includes("rate limit");
+
+        if (isConfigError) {
+          clearRecoveryState();
+          setAuthError(
+            error.message ||
+              "Could not send reset link. Please try again later.",
+          );
+          return;
+        }
       }
 
       setRecoveryEmailSentAt();
-      router.replace(buildVerifyEmailPath(email));
+      router.replace(buildVerifyEmailPath(email, "recovery"));
     } catch {
       clearRecoveryState();
       setAuthError("Something went wrong. Please try again.");

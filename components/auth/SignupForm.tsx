@@ -20,24 +20,27 @@ import { SignupSchema, type SignupInput } from "@/lib/validations/auth/signup";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { redirectAfterAuth } from "@/lib/auth";
+import { getDashboardPath, redirectAfterAuth, type AppRole } from "@/lib/auth";
 import {
   checkUserEmailExists,
   normalizeAuthEmail,
 } from "@/lib/supabase/auth/user-exists";
 import {
   buildVerifyEmailPath,
+  getSignupConfirmRedirectUrl,
+} from "@/lib/supabase/auth/email-flows";
+import {
   setRecoveryEmail,
   setRecoveryEmailSentAt,
 } from "@/lib/supabase/auth/recovery-storage";
 import { supabase } from "@/lib/supabase/client";
 
 const EXISTING_ACCOUNT_MESSAGE =
-  "Unable to create your account.";
+  "An account with this email already exists";
 
 export default function SignupForm() {
   const [authError, setAuthError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false); 
+  const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
@@ -53,11 +56,8 @@ export default function SignupForm() {
       email: "",
       password: "",
       confirmPassword: "",
-    
     },
   });
-
-
 
   const isLoading = isSubmitting || isRedirecting;
 
@@ -80,7 +80,7 @@ export default function SignupForm() {
             first_name: data.firstName,
             last_name: data.lastName,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/login")}`,
+          emailRedirectTo: getSignupConfirmRedirectUrl(),
         },
       });
 
@@ -98,6 +98,7 @@ export default function SignupForm() {
         return;
       }
 
+      // Email confirmation required — no session yet
       if (signUpData?.user && signUpData.session === null) {
         const hasNewIdentity = (signUpData.user.identities?.length ?? 0) > 0;
         if (!hasNewIdentity) {
@@ -112,25 +113,37 @@ export default function SignupForm() {
         return;
       }
 
+      // Email confirmation disabled — session created immediately
+      if (signUpData?.session && signUpData.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", signUpData.user.id)
+          .single();
+
+        const role: AppRole = profile?.role === "admin" ? "admin" : "client";
+        setIsRedirecting(true);
+        await redirectAfterAuth(router, getDashboardPath(role));
+        return;
+      }
+
       setIsRedirecting(true);
-      await redirectAfterAuth(router, "/login");
+      router.replace("/login");
     } catch {
       setAuthError("An unexpected error occurred. Please try again.");
       setIsRedirecting(false);
     }
   };
+
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      {/* Main Content Area */}
       <div className="flex w-full flex-1 items-center justify-center px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
         <div className="w-full max-w-[440px] min-w-0">
           <div className="flex flex-col gap-6">
-            {/* Logo: Responsive Alignment */}
             <div className="flex justify-center lg:justify-start">
               <Logo width={148} height={32} href="/" priority />
             </div>
 
-            {/* Header Text - Responsive Alignment */}
             <div className="space-y-1 text-center lg:text-left">
               <Typography
                 variant="h1"
@@ -153,7 +166,6 @@ export default function SignupForm() {
                 </div>
               )}
               <FieldGroup className="gap-4">
-                {/* Responsive Name Row */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field data-invalid={!!errors.firstName}>
                     <FieldLabel htmlFor="firstName">
@@ -206,7 +218,6 @@ export default function SignupForm() {
                     </Typography>
                   </FieldLabel>
 
-            
                   <div className="relative flex items-center">
                     <Input
                       id="password"
@@ -231,7 +242,6 @@ export default function SignupForm() {
                   <FieldError>{errors.password?.message}</FieldError>
                 </Field>
 
-                {/* CONFIRM PASSWORD FIELD */}
                 <Field data-invalid={!!errors.confirmPassword}>
                   <FieldLabel htmlFor="confirmPassword">
                     <Typography variant="body-regular" as="span">
@@ -239,13 +249,12 @@ export default function SignupForm() {
                     </Typography>
                   </FieldLabel>
 
-                  {/* Relative wrapper for responsiveness */}
                   <div className="relative flex items-center">
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="at least 8 characters"
-                      className=" pr-10" 
+                      className=" pr-10"
                       {...register("confirmPassword")}
                     />
                     <button
@@ -266,8 +275,6 @@ export default function SignupForm() {
                   <FieldError>{errors.confirmPassword?.message}</FieldError>
                 </Field>
               </FieldGroup>
-
-              
 
               <Button
                 type="submit"

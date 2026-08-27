@@ -43,6 +43,9 @@ yarn-error.log*
 next-env.d.ts
 
 
+
+
+# docs
 # docs task
 /docs/TASK.md
 /docs/project_flow.md

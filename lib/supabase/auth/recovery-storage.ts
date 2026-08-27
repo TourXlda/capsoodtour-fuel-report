@@ -64,18 +64,6 @@ export function maskEmail(email: string): string {
   return `${local[0]}${stars}${visibleEnd}@${domain}`;
 }
 
-const RECOVERY_RESET_PATH = "/reset-password?recovery=1";
-
-export function getPasswordResetRedirectUrl(): string {
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(RECOVERY_RESET_PATH)}`;
-  }
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  const callbackPath = `/auth/callback?next=${encodeURIComponent(RECOVERY_RESET_PATH)}`;
-  return siteUrl ? `${siteUrl}${callbackPath}` : callbackPath;
-}
-
 export function setRecoveryEmailSentAt(): void {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(RECOVERY_SENT_AT_KEY, Date.now().toString());
@@ -92,17 +80,8 @@ export function getRecoveryLinkExpirySeconds(): number {
   return Math.max(0, Math.floor(remainingMs / 1000));
 }
 
-export function buildVerifyEmailPath(
-  email: string,
-  purpose: "recovery" | "signup" = "recovery",
-): string {
-  const params = new URLSearchParams({
-    email: normalizeRecoveryEmail(email),
-  });
-
-  if (purpose === "signup") {
-    params.set("type", "signup");
-  }
-
-  return `/verify-email?${params.toString()}`;
-}
+/** @deprecated Use buildVerifyEmailPath / getPasswordResetRedirectUrl from email-flows */
+export {
+  buildVerifyEmailPath,
+  getPasswordResetRedirectUrl,
+} from "@/lib/supabase/auth/email-flows";

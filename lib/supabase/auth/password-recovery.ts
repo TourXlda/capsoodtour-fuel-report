@@ -1,9 +1,23 @@
 import { supabase } from "@/lib/supabase/client";
-import { getPasswordResetRedirectUrl } from "@/lib/supabase/auth/recovery-storage";
+import {
+  getPasswordResetRedirectUrl,
+  getSignupConfirmRedirectUrl,
+} from "@/lib/supabase/auth/email-flows";
 
 export async function requestPasswordRecovery(email: string) {
   return supabase.auth.resetPasswordForEmail(email, {
     redirectTo: getPasswordResetRedirectUrl(),
+  });
+}
+
+/** Resend signup confirmation email (not password reset). */
+export async function requestSignupConfirmationResend(email: string) {
+  return supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: getSignupConfirmRedirectUrl(),
+    },
   });
 }
 

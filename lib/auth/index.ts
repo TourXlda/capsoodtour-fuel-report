@@ -16,7 +16,7 @@ export const PROTECTED_ROUTES = [
 export const CLIENT_ONLY_ROUTES = ["/fuel-report", "/success"] as const;
 
 export function getDashboardPath(role: AppRole): string {
-  return role === "admin" ? "/admin-dashboard" : "/fuel-report";
+  return role === "admin" ? "/admin-dashboard" : "/client-dashboard";
 }
 
 export function isGuestOnlyRoute(pathname: string): boolean {

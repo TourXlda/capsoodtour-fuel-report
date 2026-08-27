@@ -17,8 +17,11 @@ import {
   setRecoveryEmail,
   setRecoveryEmailSentAt,
 } from "@/lib/supabase/auth/recovery-storage";
-import { requestPasswordRecovery } from "@/lib/supabase/auth/password-recovery";
-import { supabase } from "@/lib/supabase/client";
+import { resolveVerifyEmailPurpose } from "@/lib/supabase/auth/email-flows";
+import {
+  requestPasswordRecovery,
+  requestSignupConfirmationResend,
+} from "@/lib/supabase/auth/password-recovery";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -31,7 +34,9 @@ function formatCountdown(totalSeconds: number): string {
 export function VerifyEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isSignupFlow = searchParams.get("type") === "signup";
+  const purpose = resolveVerifyEmailPurpose(searchParams.get("type"));
+  const isSignupFlow = purpose === "signup";
+
   const [email, setEmail] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -89,20 +94,16 @@ export function VerifyEmailForm() {
       setSuccessMessage(null);
 
       if (isSignupFlow) {
-        const { error } = await supabase.auth.resend({
-          type: "signup",
-          email,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/login")}`,
-          },
-        });
+        const { error } = await requestSignupConfirmationResend(email);
 
         if (error) {
-          setAuthError(error.message || "Could not resend verification link.");
+          setAuthError(error.message || "Could not resend verification email.");
           return;
         }
 
-        setSuccessMessage("A new verification link has been sent to your email.");
+        setSuccessMessage(
+          "A new verification link has been sent to your email.",
+        );
       } else {
         const { error } = await requestPasswordRecovery(email);
 
@@ -111,7 +112,9 @@ export function VerifyEmailForm() {
           return;
         }
 
-        setSuccessMessage("A new password reset link has been sent to your email.");
+        setSuccessMessage(
+          "A new password reset link has been sent to your email.",
+        );
       }
 
       setRecoveryEmailSentAt();
@@ -128,7 +131,11 @@ export function VerifyEmailForm() {
     return (
       <div className="relative flex min-h-screen w-full flex-col bg-white">
         <div className="flex w-full flex-1 items-center justify-center px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
-          <Typography variant="muted">Loading...</Typography>
+          <Typography variant="muted">
+            {isSignupFlow
+              ? "Loading verification details..."
+              : "Loading password reset details..."}
+          </Typography>
         </div>
       </div>
     );
@@ -156,7 +163,7 @@ export function VerifyEmailForm() {
                 <Typography variant="muted">
                   {isSignupFlow
                     ? "We have sent a verification link to"
-                    : "We have sent a verification link to"}
+                    : "We have sent a password reset link to"}
                 </Typography>
                 <Typography variant="h3" className="text-[18px] break-all">
                   {email}
