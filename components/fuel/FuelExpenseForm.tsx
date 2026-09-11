@@ -86,41 +86,29 @@ export function FuelExpenseForm() {
     },
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- live total sync requires watch()
+
   const litersValue = watch("liters");
   const priceValue = watch("pricePerLiter");
   const totalValue = watch("totalAmount");
 
-  // Auto-calculate Total Amount when liters or price change
+  // Auto-calculate Price per Liter when liters or totalAmount change
   useEffect(() => {
     const l = parseFloat(litersValue || "0");
-    const p = parseFloat(priceValue || "0");
+    const t = parseFloat(totalValue || "0");
 
-    if (!isNaN(l) && !isNaN(p) && l > 0 && p > 0) {
-      const calculatedTotal = String(roundToTwoDecimals(l * p));
-      if (calculatedTotal !== totalValue) {
-        setValue("totalAmount", calculatedTotal, { shouldValidate: true });
-      }
-    } else if (!litersValue || !priceValue) {
-      if (totalValue !== "") {
-        setValue("totalAmount", "", { shouldValidate: false });
-      }
-    }
-  }, [litersValue, priceValue, setValue, totalValue]);
-
-  // Total Amount manually change karne ke liye handler
-  const handleTotalManualChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setValue("totalAmount", val, { shouldValidate: true });
-
-    const t = parseFloat(val || "0");
-    const l = parseFloat(litersValue || "0");
-
-    if (!isNaN(t) && !isNaN(l) && l > 0 && t > 0) {
+    if (!isNaN(l) && !isNaN(t) && l > 0 && t > 0) {
       const calculatedPrice = String(roundToTwoDecimals(t / l));
-      setValue("pricePerLiter", calculatedPrice, { shouldValidate: true });
+      if (calculatedPrice !== priceValue) {
+        setValue("pricePerLiter", calculatedPrice, { shouldValidate: true });
+      }
+    } else if (!litersValue || !totalValue) {
+      if (priceValue !== "") {
+        setValue("pricePerLiter", "", { shouldValidate: false });
+      }
     }
-  };
+  }, [litersValue, totalValue, setValue, priceValue]);
+
+  
 
   useEffect(() => {
     async function loadInitialData() {
@@ -147,7 +135,7 @@ export function FuelExpenseForm() {
         }
       } catch (err) {
         console.error("Error loading initial data:", err);
-      }  finally {
+      } finally {
         setIsVehiclesLoading(false);
       }
     }
@@ -422,38 +410,27 @@ export function FuelExpenseForm() {
                     type="number"
                     step="any"
                     min="0"
-                    placeholder="e.g. 1.85"
+                    placeholder="Auto-calculated"
                     {...register("pricePerLiter")}
-                    className="h-11 font-mono text-xs sm:text-sm rounded-xl"
+                    className="h-11 font-mono text-xs sm:text-sm rounded-xl bg-slate-50 dark:bg-slate-900"
                     disabled={isLoading}
                   />
                   {errors.pricePerLiter && (
                     <FieldError>{errors.pricePerLiter.message}</FieldError>
                   )}
                 </Field>
-
                 <Field className="space-y-1.5">
                   <FieldLabel className="text-xs sm:text-sm font-semibold text-foreground">
                     Total Amount (€)
                   </FieldLabel>
-                  <Controller
-                    name="totalAmount"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        type="number"
-                        step="any"
-                        min="0"
-                        placeholder="Enter or auto-calculated"
-                        className="h-11 font-mono font-bold text-xs sm:text-sm rounded-xl"
-                        disabled={isLoading}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          handleTotalManualChange(e);
-                        }}
-                      />
-                    )}
+                  <Input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="e.g. 84.18"
+                    {...register("totalAmount")}
+                    className="h-11 font-mono font-bold text-xs sm:text-sm rounded-xl"
+                    disabled={isLoading}
                   />
                   {errors.totalAmount && (
                     <FieldError>{errors.totalAmount.message}</FieldError>
