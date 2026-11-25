@@ -57,6 +57,7 @@ export function formatAdminFuelExpense(
     distanceKm: calculatedDistance,
     distanceFormatted: calculatedDistance > 0 ? formatKm(calculatedDistance) : "—",
     notes: row.notes?.trim() || "—",
+    rawNotes: row.notes ?? "",
   };
 }
 

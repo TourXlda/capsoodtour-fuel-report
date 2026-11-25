@@ -54,6 +54,20 @@ export async function fetchVehicles(page = 1) {
   };
 }
 
+/** All vehicles (any status), for admin pickers such as the expense edit dialog. */
+export async function fetchAllVehicles() {
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  return { data: (data as VehicleRow[]).map(formatVehicle), error: null };
+}
+
 export async function fetchActiveVehicles() {
   const { data, error } = await supabase
     .from("vehicles")

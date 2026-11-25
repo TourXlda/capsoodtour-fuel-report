@@ -35,6 +35,8 @@ export interface AdminFuelExpense {
   distanceKm: number;
   distanceFormatted: string;
   notes: string;
+  /** Notes exactly as stored (empty string when none), used by the edit dialog */
+  rawNotes: string;
 }
 
 export interface VehicleCostBreakdown {

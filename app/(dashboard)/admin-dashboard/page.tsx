@@ -22,6 +22,7 @@ import { GenericTable } from "@/components/dashboard/GenericTable";
 import { FuelExpenseFilter } from "@/components/dashboard/FuelExpenseFilter";
 import { CostByVehicleCard } from "@/components/dashboard/CostByVehicleCard";
 import { DeleteRecordButton } from "@/components/dashboard/DeleteRecordButton";
+import { EditFuelExpenseButton } from "@/components/fuel/EditFuelExpenseDialog";
 import { VehicleManagement } from "@/components/vehicles/VehicleManagement";
 import { Typography } from "@/components/ui/typography";
 import { useRequireRole } from "@/hooks/use-require-role";
@@ -496,13 +497,19 @@ const handleClearFilters = () => {
       header: "Actions",
       accessorKey: "id",
       renderCell: (e) => (
-        <DeleteRecordButton
-          label={`Delete expense on ${e.date}`}
-          title="Delete fuel expense record?"
-          description="This will permanently remove this fuel refill submission. This action cannot be undone."
-          isDeleting={deletingExpenseId === e.id}
-          onConfirm={() => handleDeleteExpense(e.id)}
-        />
+        <div className="flex items-center justify-center gap-1">
+          <EditFuelExpenseButton
+            expense={e}
+            onSaved={() => void fetchExpensesAndAnalytics(page, appliedFilters)}
+          />
+          <DeleteRecordButton
+            label={`Delete expense on ${e.date}`}
+            title="Delete fuel expense record?"
+            description="This will permanently remove this fuel refill submission. This action cannot be undone."
+            isDeleting={deletingExpenseId === e.id}
+            onConfirm={() => handleDeleteExpense(e.id)}
+          />
+        </div>
       ),
     },
   ];
@@ -693,7 +700,11 @@ const handleClearFilters = () => {
                       )}
                     </div>
 
-                    <div className="flex justify-end pt-1">
+                    <div className="flex justify-end gap-1 pt-1">
+                      <EditFuelExpenseButton
+                        expense={exp}
+                        onSaved={() => void fetchExpensesAndAnalytics(page, appliedFilters)}
+                      />
                       <DeleteRecordButton
                         label={`Delete expense on ${exp.date}`}
                         title="Delete fuel expense record?"

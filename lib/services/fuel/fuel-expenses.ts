@@ -19,6 +19,46 @@ export async function deleteFuelExpense(
   return { success: true };
 }
 
+export interface FuelExpenseUpdate {
+  expense_date: string;
+  vehicle_id: string;
+  driver_name: string;
+  odometer_reading: number;
+  liters: number;
+  price_per_liter: number;
+  total_amount: number;
+  notes: string | null;
+}
+
+/**
+ * Admin edit of an existing fuel expense. Only the listed fields change;
+ * the owner (user_id) and created_at are never touched.
+ * Returns an error when no row was updated (e.g. missing permission).
+ */
+export async function updateFuelExpense(
+  id: string,
+  values: FuelExpenseUpdate,
+): Promise<FuelExpenseDeleteResult> {
+  const { data, error } = await supabase
+    .from("fuel_expenses")
+    .update(values)
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  if (!data || data.length === 0) {
+    return {
+      success: false,
+      message: "The record was not updated. It may have been deleted, or you do not have permission to edit it.",
+    };
+  }
+
+  return { success: true };
+}
+
 export async function deleteFuelExpenses(
   ids: string[],
 ): Promise<BulkFuelExpenseDeleteResult> {
